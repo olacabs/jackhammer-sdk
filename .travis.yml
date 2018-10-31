@@ -1,9 +1,13 @@
 language: java
-install: mvn install --settings .maven.xml -DskipTests=true -Dgpg.skip -Dmaven.javadoc.skip=true -B -V
+install: mvn clean install --settings .maven.xml -DskipTests=true -Dgpg.skip -Dmaven.javadoc.skip=true -B -V
 jdk:
   - openjdk8
-script:
-  mvn clean deploy --settings .maven.xml -DskipTests=true -B -U -Prelease
+branch:
+  - master
+deploy:
+  provider: script
+  script: "cp .maven.xml $HOME/.m2/settings.xml && mvn deploy"
+  skip_cleanup: true
 before_install:
-  - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import
-  - echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust
+   - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import
+   - echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust
