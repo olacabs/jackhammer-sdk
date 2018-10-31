@@ -108,8 +108,14 @@ public class WebSocketClient {
             scanRequest.setScanId(scanNode.get(Constants.ID).asLong());
             scanRequest.setRepoId(scanNode.get(Constants.REPO_ID).asLong());
             return scanRequest;
-        } catch (IOException | GitCloneException | TempDirCreationException e) {
-            log.error("Building scan request or git clone error...." + e);
+        } catch (IOException e) {
+            log.error("Building scan request or git clone error....", e);
+            return scanRequest;
+        } catch (GitCloneException gc) {
+            log.error("GitCloneException...." ,gc);
+            return scanRequest;
+        } catch (TempDirCreationException tdc) {
+            log.error("TempDirCreationException....",tdc);
             return scanRequest;
         }
     }
