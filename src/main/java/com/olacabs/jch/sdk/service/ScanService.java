@@ -24,7 +24,7 @@ public class ScanService {
 
     ScanService() {
         scanServiceLoader = ServiceLoader.load(ScanSpi.class);
-        providers = new HashMap();
+        providers = new HashMap<>();
         Iterator<ScanSpi> scanProviders = scanServiceLoader.iterator();
         while (scanProviders.hasNext()) {
             ScanSpi scanProvider = scanProviders.next();

@@ -25,7 +25,7 @@ public class ScanResponse {
     private long repoId;
     private String responseInstance;
     private long toolId;
-
+    private Boolean sentFullList;
     @JsonIgnore
     private BufferedReader resultReader;
 }

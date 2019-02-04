@@ -66,10 +66,8 @@ public class WebSocketClientTask implements Runnable {
                     break;
                 }
             }
-        } catch (DeploymentException de) {
-            log.info("DeploymentException or server is not running ....",de);
-        } catch (URISyntaxException urie) {
-            log.info("URISyntaxException or server is not running ....",urie);
+        } catch (DeploymentException | URISyntaxException e) {
+            log.info("DeploymentException or server is not running ....",e);
         } catch (Exception e) {
             log.info("Exception or server is not running ....",e);
         } catch (Throwable th) {

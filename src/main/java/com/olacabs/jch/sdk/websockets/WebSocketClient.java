@@ -14,14 +14,15 @@ import com.olacabs.jch.sdk.config.JchSDKConfiguration;
 import com.olacabs.jch.sdk.exceptions.GitCloneException;
 import com.olacabs.jch.sdk.exceptions.NoMatchingProviderException;
 import com.olacabs.jch.sdk.exceptions.TempDirCreationException;
+import com.olacabs.jch.sdk.models.Finding;
 import com.olacabs.jch.sdk.models.ScanRequest;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import javax.websocket.*;
 
 import com.olacabs.jch.sdk.models.ScanResponse;
@@ -47,7 +48,7 @@ public class WebSocketClient {
         WebSocketClientTask.setSession(session);
         session.getContainer().setDefaultMaxSessionIdleTimeout(0);
         session.setMaxTextMessageBufferSize(100000000);
-        session.getContainer().setAsyncSendTimeout(60000*5);
+        session.getContainer().setAsyncSendTimeout(60000 * 5);
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put(Constants.SUPPORTED_PLATFORM_KEY, System.getenv(Constants.SUPPORTED_PLATFORM_VALUE));
@@ -67,8 +68,13 @@ public class WebSocketClient {
     @OnMessage(maxMessageSize = 100000000)
     public void onMessage(String requestObject) {
         ScanRequest scanRequest = buildScanRequest(requestObject);
-        ScanResponse scanResponse = sendScanRequest(scanRequest);
-        sendScanResponseInChunks(WebSocketClientTask.getSession(), scanResponse);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ScanResponse scanResponse = sendScanRequest(scanRequest);
+                sendScanResponseInChunks(WebSocketClientTask.getSession(), scanResponse);
+            }
+        }).start();
     }
 
     @OnClose
@@ -84,7 +90,7 @@ public class WebSocketClient {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode scanNode = mapper.readTree(scanObject);
             String cloneRequired = scanNode.get(Constants.CLONE_REQUIRED).toString();
-            if (StringUtils.equals(cloneRequired,Constants.TRUE)) {
+            if (StringUtils.equals(cloneRequired, Constants.TRUE)) {
                 File targetDir = scanUtil.createTempDirectory();
                 scanUtil.cloneRepo(scanNode.get(Constants.TARGET).toString(), targetDir);
                 scanRequest.setTarget(targetDir.getAbsolutePath());
@@ -92,9 +98,9 @@ public class WebSocketClient {
                 scanRequest.setIsMobileScan(false);
             } else {
                 if (StringUtils.equals(scanNode.get(Constants.IS_MOBILE_SCAN).toString(), Constants.TRUE)) {
-                    InputStream apkFileFromS3 = getApkFileFromS3(scanNode.get(Constants.APK_TEMP_FILE).toString().replace("\"",""));
+                    InputStream apkFileFromS3 = getApkFileFromS3(scanNode.get(Constants.APK_TEMP_FILE).toString().replace("\"", ""));
                     Path tempFile = getTempFile();
-                    Files.copy(apkFileFromS3,tempFile);
+                    Files.copy(apkFileFromS3, tempFile);
                     scanRequest.setTarget(tempFile.toAbsolutePath().toString());
                     apkFileFromS3.close();
                     scanRequest.setIsMobileScan(true);
@@ -108,14 +114,8 @@ public class WebSocketClient {
             scanRequest.setScanId(scanNode.get(Constants.ID).asLong());
             scanRequest.setRepoId(scanNode.get(Constants.REPO_ID).asLong());
             return scanRequest;
-        } catch (IOException e) {
-            log.error("Building scan request or git clone error....", e);
-            return scanRequest;
-        } catch (GitCloneException gc) {
-            log.error("GitCloneException...." ,gc);
-            return scanRequest;
-        } catch (TempDirCreationException tdc) {
-            log.error("TempDirCreationException....",tdc);
+        } catch (IOException | GitCloneException | TempDirCreationException e) {
+            log.error("Building scan request or git clone error...." + e);
             return scanRequest;
         }
     }
@@ -132,11 +132,11 @@ public class WebSocketClient {
             scanResponse.setScanId(scanRequest.getScanId());
             scanResponse.setRepoId(scanRequest.getRepoId());
             scanResponse = resultParserService.parseScanResults(scanResponse, toolName);
-            if(scanRequest.getIsMobileScan()) {
+            if (scanRequest.getIsMobileScan()) {
                 File apkFile = new File(scanRequest.getTarget());
                 apkFile.delete();
             }
-            if(scanRequest.getCloneRequire()) {
+            if (scanRequest.getCloneRequire()) {
                 FileUtils.deleteDirectory(new File(scanRequest.getTarget()));
             }
         } catch (NoMatchingProviderException e) {
@@ -152,36 +152,47 @@ public class WebSocketClient {
     }
 
     private void sendScanResponseInChunks(Session session, ScanResponse scanResponse) {
+        scanResponse.setToolId(Long.valueOf(System.getenv(Constants.TOOL_ID_VALUE)));
         try {
-            session.getBasicRemote().sendObject(scanResponse);
-//            long responseSize =  ObjectSizeCalculator.getObjectSize(scanResponse);
-//            if (responseSize < 65536) {
-//                scanResponse.setToolId(Long.valueOf(System.getenv(Constants.TOOL_ID_VALUE)));
-//                session.getBasicRemote().sendObject(scanResponse);
-//            } else {
-//                long totalObjectSize = 0;
-//                long chunkTimes = 0;
-//                List<Finding> findingList = scanResponse.getFindings();
-//                List<Finding> chunkList = new ArrayList<>();
-//                for (Finding finding : findingList) {
-//                    long currentObjectSize = ObjectSizeCalculator.getObjectSize(finding);
-//                    long cumulativeObjectSize = currentObjectSize + totalObjectSize;
-//                    if (cumulativeObjectSize > 65536) {
-//                        scanResponse.setFindings(chunkList);
-//                        session.getBasicRemote().sendObject(scanResponse);
-//                        totalObjectSize = 0;
-//                        chunkList.clear();
-//                        chunkList.add(finding);
-//                        chunkTimes = chunkTimes + 1;
-//                    } else {
-//                        chunkList.add(finding);
-//                        totalObjectSize += currentObjectSize;
-//                    }
-//                }
-//                scanResponse.setFindings(chunkList);
-//                scanResponse.setToolId(Long.valueOf(System.getenv(Constants.TOOL_ID_VALUE)));
-//                session.getBasicRemote().sendObject(scanResponse);
-//            }
+//            session.getBasicRemote().sendObject(scanResponse);
+            if (scanResponse.getFindings() == null) {
+                scanResponse.setSentFullList(true);
+                session.getBasicRemote().sendObject(scanResponse);
+                return;
+            }
+            if (scanResponse.getFindings().size() < 20) {
+                log.info("Records less than 20,sending all records for scan id...{}..{}", scanResponse.getScanId());
+                scanResponse.setSentFullList(true);
+                session.getBasicRemote().sendObject(scanResponse);
+            } else {
+                int count = 0;
+                int totalCount = scanResponse.getFindings().size();
+                int sentCount = 0;
+                log.info("Total findings for scan id...{}..{}", scanResponse.getScanId());
+                List<Finding> findingList = scanResponse.getFindings();
+                List<Finding> chunkList = new ArrayList<>();
+                for (Finding finding : findingList) {
+                    if (count == 20) {
+                        scanResponse.setFindings(chunkList);
+                        log.info("sending 20 of all records for scan id...{}..{}", scanResponse.getScanId());
+                        if (sentCount == totalCount) scanResponse.setSentFullList(true);
+                        session.getBasicRemote().sendObject(scanResponse);
+                        chunkList.clear();
+                        chunkList.add(finding);
+                        count = 0;
+                    } else {
+                        chunkList.add(finding);
+                        count += 1;
+                    }
+                    sentCount += 1;
+                }
+                if (chunkList.size() > 0) {
+                    log.info("sending rest of records for scan id...{}..{}", scanResponse.getScanId());
+                    scanResponse.setFindings(chunkList);
+                    scanResponse.setSentFullList(true);
+                    session.getBasicRemote().sendObject(scanResponse);
+                }
+            }
         } catch (EncodeException e) {
             log.error("EncodeException while sending response ", e);
         } catch (IOException e) {
@@ -202,10 +213,11 @@ public class WebSocketClient {
             S3Object s3object = getS3Client().getObject(getBucketName(), S3bucketFile);
             inputStream = s3object.getObjectContent();
         } catch (Throwable e) {
-            log.error("Error while fetching s3 apk file",e);
+            log.error("Error while fetching s3 apk file", e);
         }
         return inputStream;
     }
+
     private AmazonS3 getS3Client() {
         String accessKey = System.getenv(Constants.S3_ACCESS_KEY);
         String secretKey = System.getenv(Constants.S3_SECRET_KEY);

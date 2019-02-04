@@ -21,7 +21,7 @@ public class PostDeployService {
 
     PostDeployService() {
         postDeployServiceLoader = ServiceLoader.load(PostDeploySpi.class);
-        providers = new HashMap();
+        providers = new HashMap<>();
         Iterator<PostDeploySpi> postDeployProviders = postDeployServiceLoader.iterator();
         while (postDeployProviders.hasNext()) {
             PostDeploySpi postDeployProvider = postDeployProviders.next();
