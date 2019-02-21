@@ -153,6 +153,7 @@ public class WebSocketClient {
 
     private void sendScanResponseInChunks(Session session, ScanResponse scanResponse) {
         scanResponse.setToolId(Long.valueOf(System.getenv(Constants.TOOL_ID_VALUE)));
+        int batchSize = 20;
         try {
 //            session.getBasicRemote().sendObject(scanResponse);
             if (scanResponse.getFindings() == null) {
@@ -160,7 +161,7 @@ public class WebSocketClient {
                 session.getBasicRemote().sendObject(scanResponse);
                 return;
             }
-            if (scanResponse.getFindings().size() < 20) {
+            if (scanResponse.getFindings().size() < batchSize) {
                 log.info("Records less than 20,sending all records for scan id...{}..{}", scanResponse.getScanId());
                 scanResponse.setSentFullList(true);
                 session.getBasicRemote().sendObject(scanResponse);
@@ -172,7 +173,7 @@ public class WebSocketClient {
                 List<Finding> findingList = scanResponse.getFindings();
                 List<Finding> chunkList = new ArrayList<>();
                 for (Finding finding : findingList) {
-                    if (count == 20) {
+                    if (count == batchSize) {
                         scanResponse.setFindings(chunkList);
                         log.info("sending 20 of all records for scan id...{}..{}", scanResponse.getScanId());
                         if (sentCount == totalCount) scanResponse.setSentFullList(true);
