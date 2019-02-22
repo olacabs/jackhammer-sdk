@@ -21,7 +21,7 @@ public class PreDeployService {
 
     PreDeployService() {
         preDeployServiceLoader = ServiceLoader.load(PreDeploySpi.class);
-        providers = new HashMap<>();
+        providers = new HashMap();
         Iterator<PreDeploySpi> deployProviders = preDeployServiceLoader.iterator();
 
         while (deployProviders.hasNext()) {

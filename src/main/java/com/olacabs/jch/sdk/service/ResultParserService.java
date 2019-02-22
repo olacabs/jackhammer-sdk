@@ -22,7 +22,7 @@ public class ResultParserService {
 
     ResultParserService() {
         resultParserServiceLoader = ServiceLoader.load(ResultParserSpi.class);
-        providers = new HashMap<>();
+        providers = new HashMap();
         Iterator<ResultParserSpi> parserProviders = resultParserServiceLoader.iterator();
         while (parserProviders.hasNext()) {
             ResultParserSpi parserProvider = parserProviders.next();

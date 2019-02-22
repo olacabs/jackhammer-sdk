@@ -67,7 +67,7 @@ public class WebSocketClient {
 
     @OnMessage(maxMessageSize = 100000000)
     public void onMessage(String requestObject) {
-        ScanRequest scanRequest = buildScanRequest(requestObject);
+        final ScanRequest scanRequest = buildScanRequest(requestObject);
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -114,8 +114,14 @@ public class WebSocketClient {
             scanRequest.setScanId(scanNode.get(Constants.ID).asLong());
             scanRequest.setRepoId(scanNode.get(Constants.REPO_ID).asLong());
             return scanRequest;
-        } catch (IOException | GitCloneException | TempDirCreationException e) {
-            log.error("Building scan request or git clone error...." + e);
+        } catch (IOException e) {
+            log.error("Building scan request or git clone error....", e);
+            return scanRequest;
+        } catch (GitCloneException ge) {
+            log.error("GitCloneException....", ge);
+            return scanRequest;
+        } catch (TempDirCreationException tce) {
+            log.error("TempDirCreationException....", tce);
             return scanRequest;
         }
     }
@@ -171,7 +177,7 @@ public class WebSocketClient {
                 int sentCount = 0;
                 log.info("Total findings for scan id...{}..{}", scanResponse.getScanId());
                 List<Finding> findingList = scanResponse.getFindings();
-                List<Finding> chunkList = new ArrayList<>();
+                List<Finding> chunkList = new ArrayList();
                 for (Finding finding : findingList) {
                     if (count == batchSize) {
                         scanResponse.setFindings(chunkList);
