@@ -56,7 +56,7 @@ public class WebSocketClient {
             jsonObject.put(Constants.TOOL_RESPONSE_INSTANCE_KEY, Constants.TOOL_RESPONSE_INSTANCE_VALUE);
             jsonObject.put(Constants.MAX_ALLOWED_SCANS_KEY, System.getenv(Constants.MAX_ALLOWED_SCANS_VALUE));
             jsonObject.put(Constants.HOSTNAME, System.getenv(Constants.ENV_HOSTNAME));
-            jsonObject.put(Constants.PORT,System.getenv(Constants.ENV_PORTS));
+            jsonObject.put(Constants.PORT, System.getenv(Constants.ENV_PORTS));
             session.getBasicRemote().sendObject(jsonObject.toString());
             log.info("Tool info has sent");
         } catch (IOException io) {
@@ -117,7 +117,13 @@ public class WebSocketClient {
             scanRequest.setScanId(scanNode.get(Constants.ID).asLong());
             scanRequest.setRepoId(scanNode.get(Constants.REPO_ID).asLong());
             return scanRequest;
-        } catch (IOException | GitCloneException | TempDirCreationException e) {
+        } catch (IOException e) {
+            log.error("Building scan request or git clone error...." + e);
+            return scanRequest;
+        } catch (GitCloneException e) {
+            log.error("Building scan request or git clone error...." + e);
+            return scanRequest;
+        } catch (TempDirCreationException e) {
             log.error("Building scan request or git clone error...." + e);
             return scanRequest;
         }

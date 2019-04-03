@@ -66,7 +66,7 @@ public class WebSocketClientTask implements Runnable {
                     break;
                 }
             }
-        } catch (Exception e) {
+        }  catch (Exception e) {
             log.info("Exception or server is not running ....",e);
         } catch (Throwable th) {
             log.info("Throwable Exception or server is not running ....",th);
