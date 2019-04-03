@@ -35,7 +35,7 @@ public class ScanUtil {
 
     public void cloneRepo(String target, File tmpDir) throws GitCloneException {
         try {
-            final StringBuilder gitCmd = new StringBuilder();
+            StringBuilder gitCmd = new StringBuilder();
             gitCmd.append(target.replace("\"",""));
             gitCmd.append(Constants.EMPTY_STRING);
             gitCmd.append(tmpDir.getAbsolutePath().toString());

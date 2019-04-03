@@ -20,4 +20,5 @@ public class ScanRequest extends AbstractModel {
     private String target;
     private String supportedTools;
     private File resultFile;
+    private String gitTarget;
 }

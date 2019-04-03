@@ -55,6 +55,8 @@ public class WebSocketClient {
             jsonObject.put(Constants.TOOL_ID_KEY, System.getenv(Constants.TOOL_ID_VALUE));
             jsonObject.put(Constants.TOOL_RESPONSE_INSTANCE_KEY, Constants.TOOL_RESPONSE_INSTANCE_VALUE);
             jsonObject.put(Constants.MAX_ALLOWED_SCANS_KEY, System.getenv(Constants.MAX_ALLOWED_SCANS_VALUE));
+            jsonObject.put(Constants.HOSTNAME, System.getenv(Constants.ENV_HOSTNAME));
+            jsonObject.put(Constants.PORT,System.getenv(Constants.ENV_PORTS));
             session.getBasicRemote().sendObject(jsonObject.toString());
             log.info("Tool info has sent");
         } catch (IOException io) {
@@ -67,7 +69,7 @@ public class WebSocketClient {
 
     @OnMessage(maxMessageSize = 100000000)
     public void onMessage(String requestObject) {
-        final ScanRequest scanRequest = buildScanRequest(requestObject);
+        ScanRequest scanRequest = buildScanRequest(requestObject);
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -92,6 +94,7 @@ public class WebSocketClient {
             String cloneRequired = scanNode.get(Constants.CLONE_REQUIRED).toString();
             if (StringUtils.equals(cloneRequired, Constants.TRUE)) {
                 File targetDir = scanUtil.createTempDirectory();
+                scanRequest.setGitTarget(scanNode.get(Constants.TARGET).toString());
                 scanUtil.cloneRepo(scanNode.get(Constants.TARGET).toString(), targetDir);
                 scanRequest.setTarget(targetDir.getAbsolutePath());
                 scanRequest.setCloneRequire(true);
@@ -114,14 +117,8 @@ public class WebSocketClient {
             scanRequest.setScanId(scanNode.get(Constants.ID).asLong());
             scanRequest.setRepoId(scanNode.get(Constants.REPO_ID).asLong());
             return scanRequest;
-        } catch (IOException e) {
-            log.error("Building scan request or git clone error....", e);
-            return scanRequest;
-        } catch (GitCloneException ge) {
-            log.error("GitCloneException....", ge);
-            return scanRequest;
-        } catch (TempDirCreationException tce) {
-            log.error("TempDirCreationException....", tce);
+        } catch (IOException | GitCloneException | TempDirCreationException e) {
+            log.error("Building scan request or git clone error...." + e);
             return scanRequest;
         }
     }

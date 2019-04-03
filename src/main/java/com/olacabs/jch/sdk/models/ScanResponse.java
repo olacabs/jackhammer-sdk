@@ -16,16 +16,17 @@ import java.util.List;
 @NoArgsConstructor
 public class ScanResponse {
     private String status;
-    private long startTime;
-    private long endTime;
     private String failedReasons; // null in case of success state
+    private String responseInstance;
     private List<Finding> findings;
     private File resultFile;
+    private Boolean sentFullList;
+    private long startTime;
+    private long endTime;
     private long scanId;
     private long repoId;
-    private String responseInstance;
     private long toolId;
-    private Boolean sentFullList;
+
     @JsonIgnore
     private BufferedReader resultReader;
 }
