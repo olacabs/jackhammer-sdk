@@ -69,7 +69,7 @@ public class WebSocketClient {
 
     @OnMessage(maxMessageSize = 100000000)
     public void onMessage(String requestObject) {
-        ScanRequest scanRequest = buildScanRequest(requestObject);
+        final ScanRequest scanRequest = buildScanRequest(requestObject);
         new Thread(new Runnable() {
             @Override
             public void run() {
