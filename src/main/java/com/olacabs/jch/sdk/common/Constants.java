@@ -40,4 +40,8 @@ public class Constants {
     public static final String ID = "id";
     public static final String REPO_ID = "repoId";
     public static final String CLONE_REQUIRED = "cloneRequired";
+    public static final String HOSTNAME = "hostname";
+    public static final String ENV_HOSTNAME = "HOSTNAME";
+    public static final String ENV_PORTS = "PORTS";
+    public static final String PORT = "port";
 }
